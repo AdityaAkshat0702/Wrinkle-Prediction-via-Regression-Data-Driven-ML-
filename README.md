@@ -11,13 +11,12 @@ This project implements a data-driven machine learning approach to predict wrink
 - **wrinkle_model.pth**: Saved neural network weights.
 - **pca_transformer.pkl**: Saved PCA transformer for dimensionality reduction.
 - **wrinkle_plot.png**: Static visualization of actual vs. predicted wrinkles.
-- **README.md**: This file.
 
 ## Setup and Usage
-1. **Install Dependencies**:pip install numpy pandas scikit-learn torch matplotlib joblib
-2. **Generate Data**:python data_gen.py
-3. **Train Model and Visualize**:python main.py - This saves the model, PCA, and a static plot.
-4. **Run Animation**:- Displays a real-time animation of the wrinkle pattern.
+1. **Install Dependencies**: pip install numpy pandas scikit-learn torch matplotlib joblib
+2. **Generate Data**: python data_gen.py
+3. **Train Model and Visualize**: python main.py - This saves the model, PCA, and a static plot.
+4. **Run Animation**: Displays a real-time animation of the wrinkle pattern.
 
 ## Results
 - **Training**: 1000 epochs, final test loss typically around 0.05 (varies with random seed).
