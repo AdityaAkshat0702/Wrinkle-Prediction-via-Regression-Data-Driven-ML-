@@ -8,32 +8,39 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # --- Load the Saved Model and PCA ---
 input_size = 3  # bend_angle, frequency, phase
-output_size = 6  # Adjust if your PCA components differ
+output_size = 6  # This must match the number of components from main.py
 
+# --- IMPORTANT CHANGE HERE ---
+# This model architecture MUST MATCH the one that was saved by main.py.
+# The enhanced main.py saves the last architecture tested: [64] (single hidden layer)
 model = nn.Sequential(
-    nn.Linear(input_size, 32),
-    nn.ReLU(),
-    nn.Linear(32, 64),
+    nn.Linear(input_size, 64),
     nn.ReLU(),
     nn.Linear(64, output_size)
 )
 
+# Load the saved weights into the model structure
 model.load_state_dict(torch.load('wrinkle_model.pth'))
-model.eval()
+model.eval()  # Set the model to evaluation mode
 
+# Load the saved PCA transformer
 pca = joblib.load('pca_transformer.pkl')
 
 # --- Fixed Parameters for Animation ---
-bend_angle = 0.15  # Example fixed value (tweak as needed)
-frequency = 10.0   # Example fixed value
+bend_angle = 0.15
+frequency = 10.0
 grid_size = 10
 x = np.linspace(0, 1, grid_size)
 y = np.linspace(0, 1, grid_size)
 xx, yy = np.meshgrid(x, y)
 
+# --- Set Up the Figure ---
+fig = plt.figure(figsize=(8, 6))
+ax = fig.add_subplot(111, projection='3d')
+
 # --- Animation Function ---
 def animate(frame):
-    # Vary phase over time (e.g., 0 to 2π in 100 frames)
+    # Vary phase over time (0 to 2π)
     phase = (frame / 100) * 2 * np.pi
     
     # Prepare input tensor
@@ -47,7 +54,7 @@ def animate(frame):
     # Inverse transform to get full coordinates
     predicted_wrinkle = pca.inverse_transform(predicted_pca)
     predicted_vertices = predicted_wrinkle.reshape(-1, 3)
-    predicted_z = predicted_vertices[:, 2]  # Extract z (wrinkle height)
+    predicted_z = predicted_vertices[:, 2]
     predicted_z_grid = predicted_z.reshape(grid_size, grid_size)
     
     # Update the plot
@@ -59,13 +66,8 @@ def animate(frame):
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
 
-# --- Set Up the Figure ---
-fig = plt.figure(figsize=(8, 6))
-ax = fig.add_subplot(111, projection='3d')
-
 # --- Create and Run the Animation ---
-ani = FuncAnimation(fig, animate, frames=100, interval=50, blit=False)
+# frames=101 to get a smooth loop from 0 to 2*pi
+ani = FuncAnimation(fig, animate, frames=101, interval=50, blit=False)
 
-plt.show()  # Displays the real-time animation
-# Optional: Save as GIF (requires imagemagick or ffmpeg installed)
-# ani.save('wrinkle_animation.gif', writer='pillow', fps=20)
+plt.show()
