@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+import joblib  # For saving PCA
 
 # 1. Load the dataset
 print("Loading dataset...")
@@ -93,6 +94,11 @@ for epoch in range(num_epochs):
 
 print("--- Training Finished ---")
 
+# Save the model and PCA
+torch.save(model.state_dict(), 'wrinkle_model.pth')
+joblib.dump(pca, 'pca_transformer.pkl')
+print("Model and PCA saved successfully.")
+
 # --- Evaluate the Model ---
 # Set the model to evaluation mode
 model.eval()
@@ -140,12 +146,13 @@ fig = plt.figure(figsize=(12, 6))
 ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 ax1.plot_surface(xx, yy, original_z_grid, cmap='viridis')
 ax1.set_title('Actual Wrinkle')
-ax1.set_zlim(-0.2, 0.2) # Keep z-axis scale consistent
+ax1.set_zlim(-0.2, 0.2)
 
 # Plot the predicted wrinkle
 ax2 = fig.add_subplot(1, 2, 2, projection='3d')
 ax2.plot_surface(xx, yy, predicted_z_grid, cmap='viridis')
 ax2.set_title('Predicted Wrinkle')
-ax2.set_zlim(-0.2, 0.2) # Keep z-axis scale consistent
+ax2.set_zlim(-0.2, 0.2)
 
-plt.show()
+plt.savefig('wrinkle_plot.png')  # Save the plot
+plt.close()  # Close to free resources
