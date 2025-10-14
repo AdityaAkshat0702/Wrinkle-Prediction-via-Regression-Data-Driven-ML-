@@ -132,9 +132,28 @@ for i, hidden in enumerate(architectures):
 
 print("\nAblation Study Results:", results)
 
-# Save the best model (e.g., lowest test loss)
+# Find and retrain the best architecture
 best_arch = min(results, key=results.get)
-# Assuming we use the last model for further evaluation; in practice, retrain the best one
+best_arch_idx = int(best_arch.split()[1])  # Extract index from "Arch X"
+best_hidden_layers = architectures[best_arch_idx]
+
+print(f"\n🏆 Best Architecture: {best_arch} with structure {best_hidden_layers if best_hidden_layers else 'Linear'}")
+print(f"Best Test Loss: {results[best_arch]:.6f}")
+
+# Retrain the best model for saving and visualization
+print(f"\n--- Retraining Best Architecture ({best_arch}) for Final Use ---")
+model = build_model(best_hidden_layers)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+loss_function = nn.MSELoss()
+
+for epoch in range(1000):
+    predictions = model(X_train_tensor)
+    loss = loss_function(predictions, Y_train_tensor)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if (epoch + 1) % 200 == 0:
+        print(f'Best Model Epoch [{epoch+1}/1000], Loss: {loss.item():.6f}')
 
 # --- Procedural Baseline Runtime ---
 print("\n--- Procedural Baseline Runtime ---")
@@ -172,8 +191,14 @@ with torch.no_grad():
     print(f'\nFinal Loss on Test Data: {test_loss.item():.4f}')
 
 # --- Visualize a Sample Prediction ---
-original_pca = Y_test_tensor[0].unsqueeze(0)
-predicted_pca = test_predictions[0].unsqueeze(0)
+# Let's pick a more interesting sample (not just the first one)
+sample_idx = 5  # Try a different sample
+original_pca = Y_test_tensor[sample_idx].unsqueeze(0)
+predicted_pca = test_predictions[sample_idx].unsqueeze(0)
+
+# Also get the input parameters for this sample to understand what we're predicting
+sample_params = X_test[sample_idx]
+print(f"\nSample Parameters - Bend Angle: {sample_params[0]:.4f}, Frequency: {sample_params[1]:.4f}, Phase: {sample_params[2]:.4f}")
 
 original_wrinkle = pca.inverse_transform(original_pca.numpy())
 predicted_wrinkle = pca.inverse_transform(predicted_pca.numpy())
@@ -188,22 +213,38 @@ predicted_z = predicted_vertices[:, 2]
 original_z_grid = original_z.reshape(grid_size, grid_size)
 predicted_z_grid = predicted_z.reshape(grid_size, grid_size)
 
+# Calculate correlation between actual and predicted
+correlation = np.corrcoef(original_z.flatten(), predicted_z.flatten())[0, 1]
+mse = np.mean(np.square(original_z - predicted_z))
+print(f"Correlation between actual and predicted: {correlation:.4f}")
+print(f"MSE for this sample: {mse:.6f}")
+
 x = np.linspace(0, 1, grid_size)
 y = np.linspace(0, 1, grid_size)
 xx, yy = np.meshgrid(x, y)
 
-fig = plt.figure(figsize=(12, 6))
-ax1 = fig.add_subplot(1, 2, 1, projection='3d')
-ax1.plot_surface(xx, yy, original_z_grid, cmap='viridis')
-ax1.set_title('Actual Wrinkle')
+fig = plt.figure(figsize=(18, 6))
+
+# Plot 1: Actual wrinkle
+ax1 = fig.add_subplot(1, 3, 1, projection='3d')
+ax1.plot_surface(xx, yy, original_z_grid, cmap='viridis', alpha=0.8)
+ax1.set_title(f'Actual Wrinkle\n(Bend: {sample_params[0]:.3f}, Freq: {sample_params[1]:.1f})')
 ax1.set_zlim(-0.2, 0.2)
 
-ax2 = fig.add_subplot(1, 2, 2, projection='3d')
-ax2.plot_surface(xx, yy, predicted_z_grid, cmap='viridis')
-ax2.set_title('Predicted Wrinkle')
+# Plot 2: Predicted wrinkle
+ax2 = fig.add_subplot(1, 3, 2, projection='3d')
+ax2.plot_surface(xx, yy, predicted_z_grid, cmap='viridis', alpha=0.8)
+ax2.set_title(f'Predicted Wrinkle\n(Correlation: {correlation:.3f})')
 ax2.set_zlim(-0.2, 0.2)
 
-plt.savefig('wrinkle_plot.png')
+# Plot 3: Error visualization
+ax3 = fig.add_subplot(1, 3, 3, projection='3d')
+error_z_grid = np.abs(original_z_grid - predicted_z_grid)
+ax3.plot_surface(xx, yy, error_z_grid, cmap='Reds', alpha=0.8)
+ax3.set_title(f'Absolute Error\n(MSE: {mse:.6f})')
+
+plt.tight_layout()
+plt.savefig('wrinkle_plot.png', dpi=150, bbox_inches='tight')
 plt.close()
 
 # --- Per-Vertex Error and Map (Figure 4) ---
@@ -229,4 +270,4 @@ plt.xlabel('Squared Distance')
 plt.ylabel('Number of Examples')
 plt.title('Histogram of Squared Distances')
 plt.savefig('histogram_distances.png')
-plt.close()
+plt.close() 

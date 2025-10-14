@@ -11,12 +11,16 @@ input_size = 3  # bend_angle, frequency, phase
 output_size = 6  # This must match the number of components from main.py
 
 # --- IMPORTANT CHANGE HERE ---
-# This model architecture MUST MATCH the one that was saved by main.py.
-# The enhanced main.py saves the last architecture tested: [64] (single hidden layer)
+# This model architecture MUST MATCH the best one saved by main.py.
+# The enhanced main.py now saves the best architecture (likely [32, 64, 128])
 model = nn.Sequential(
-    nn.Linear(input_size, 64),
+    nn.Linear(input_size, 32),
     nn.ReLU(),
-    nn.Linear(64, output_size)
+    nn.Linear(32, 64),
+    nn.ReLU(),
+    nn.Linear(64, 128),
+    nn.ReLU(),
+    nn.Linear(128, output_size)
 )
 
 # Load the saved weights into the model structure
